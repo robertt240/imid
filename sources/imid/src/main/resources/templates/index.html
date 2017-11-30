@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8">
     <title>Title</title>
@@ -17,38 +17,42 @@
                     <h1 class="text-center">Images content comaprator</h1>
                 </div>
                 <div class="panel-body">
+                    <form action="http:\\localhost" method="post" enctype="multipart/form-data"
+                          th:action="@{'/upload/'}">
+                        <div class="col-sm-6">
+                            <div class="panel panel-default">
+                                <div class="panel-heading">
 
-                    <div class="col-sm-6">
-                        <div class="panel panel-default">
-                            <div class="panel-heading">
-
-                                <h2 class="text-center">First image</h2>
-                            </div>
-                            <div class="panel-body">
-                                <label class="btn btn-primary btn-file col-md-6 col-md-offset-3">
-                                    Browse <input type="file" style="display: none;">
-                                </label>
+                                    <h2 class="text-center">First image</h2>
+                                </div>
+                                <div class="panel-body">
+                                    <label class="btn btn-primary btn-file col-md-6 col-md-offset-3">
+                                        Browse <input id="imagefile1" name="imagefile" type="file" style="display: none;">
+                                    </label>
+                                </div>
                             </div>
                         </div>
-                    </div>
-                    <div class="col-sm-6">
-                        <div class="panel panel-default">
-                            <div class="panel-heading">
+                        <div class="col-sm-6">
+                            <div class="panel panel-default">
+                                <div class="panel-heading">
 
-                                <h2 class="text-center">Second image</h2>
-                            </div>
-                            <div class="panel-body">
-                                <label class="btn btn-primary btn-file col-md-6 col-md-offset-3">
-                                    Browse <input type="file" style="display: none;">
-                                </label>
+                                    <h2 class="text-center">Second image</h2>
+                                </div>
+                                <div class="panel-body">
+                                    <label class="btn btn-primary btn-file col-md-6 col-md-offset-3">
+                                        Browse <input id="imagefile2" name="imagefile" type="file" style="display: none;">
+                                    </label>
+                                </div>
                             </div>
                         </div>
-                    </div>
-                    <br>
-                    <br>
-                    <div class="panel">
-                        <a href="/result" class="btn btn-danger col-md-6 col-md-offset-3">Compare images</a>
-                    </div>
+                        <br>
+                        <br>
+
+                        <div class="panel">
+                            <button type="submit" class="btn btn-danger col-md-6 col-md-offset-3">Compare images
+                            </button>
+                        </div>
+                    </form>
                 </div>
             </div>
         </div>
