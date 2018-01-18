@@ -14,42 +14,46 @@
             <div class="panel panel-primary">
                 <div class="panel-heading">
 
-                    <h1 class="text-center">Images content comaprator</h1>
+                    <h1 class="text-center">Images content comparator</h1>
                 </div>
                 <div class="panel-body">
 
-                    <!--<div class="col-sm-6">-->
-                        <!--<div class="panel panel-default">-->
-                            <!--<div class="panel-heading">-->
+                    <div class="col-sm-6">
+                        <div class="panel panel-default">
+                            <div class="panel-heading">
 
-                                <!--<h2 class="text-center">First image id number:</h2>-->
-                            <!--</div>-->
-                            <!--<div class="panel-body">-->
-                                <!--<code class="col-md-offset-2">91162629d258a876ee994e9233b2ad87</code>-->
-                            <!--</div>-->
-                        <!--</div>-->
-                    <!--</div>-->
-                    <!--<div class="col-sm-6">-->
-                        <!--<div class="panel panel-default">-->
-                            <!--<div class="panel-heading">-->
+                                <h2 class="text-center">First image id number:</h2>
+                            </div>
+                            <div class="panel-body">
+                                <code th:text="${img1}" class="col-md-offset-2">91162629d258a876ee994e9233b2ad87</code>
+                                <img th:src="@{image/output_img1}" width="100%">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-sm-6">
+                        <div class="panel panel-default">
+                            <div class="panel-heading">
 
-                                <!--<h2 class="text-center">Second image id number:</h2>-->
-                            <!--</div>-->
-                            <!--<div class="panel-body">-->
-                                <!--<code class="col-md-offset-2">91162629d258a876ee994e9233b2ad87</code>-->
-                            <!--</div>-->
-                        <!--</div>-->
-                    <!--</div>-->
+                                <h2 class="text-center">Second image id number:</h2>
+                            </div>
+                            <div class="panel-body">
+                                <code th:text="${img2}" class="col-md-offset-2">91162629d258a876ee994e9233b2ad87</code>
+                                <img th:src="@{image/output_img2}" width="100%">
+                            </div>
+                        </div>
+                    </div>
 
-                    <!--<div class="col-sm-12">-->
-                        <!--<div class="panel panel-primary">-->
-                            <!--<div class="panel-heading>">-->
-                                <!--<h2 class="text-center">Two images contains the same object!</h2>-->
-                            <!--</div>-->
-                        <!--</div>-->
-                    <!--</div>-->
-                    <img th:src="@{image/output}" width="100%">
+                    <div class="col-sm-12">
+                        <div class="panel panel-primary">
+                            <div class="panel-heading>">
+                                <h2 class="text-center" th:text="${rate}"></h2>
+                            </div>
+                        </div>
+                    </div>
 
+                    <!--<img th:src="@{image/output_img2}" width="50%">-->
+                    <!--<h2 th:text="${img1}"></h2>-->
+                    <!--<h2 th:text="${img2}"></h2>-->
                 </div>
             </div>
         </div>

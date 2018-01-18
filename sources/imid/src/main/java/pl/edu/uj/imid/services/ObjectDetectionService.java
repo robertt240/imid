@@ -1,19 +1,14 @@
 package pl.edu.uj.imid.services;
 
-
-import com.sun.org.apache.xalan.internal.utils.FeatureManager;
-import org.opencv.calib3d.Calib3d;
 import org.opencv.core.*;
-import org.opencv.features2d.*;
 import org.opencv.imgcodecs.Imgcodecs;
 import org.opencv.imgproc.Imgproc;
-import org.opencv.ml.KNearest;
-import org.opencv.ml.SVM;
-import org.opencv.ml.SVMSGD;
 import org.springframework.stereotype.Service;
 
-import javax.imageio.ImageIO;
-import java.util.ArrayList;
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.util.Base64;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -21,91 +16,181 @@ import java.util.stream.Collectors;
 @Service
 public class ObjectDetectionService {
 
-    public void processImages() {
-        System.loadLibrary(Core.NATIVE_LIBRARY_NAME);
 
-        Mat img1 = Imgcodecs.imread("/home/robert/Documents/IndividualProject/imid/sources/imid/src/main/resources/uploads/img1.jpg");
-        Mat img2 = Imgcodecs.imread("/home/robert/Documents/IndividualProject/imid/sources/imid/src/main/resources/uploads/img2.jpg");
+    public List<Point> getPointsOnLine(Point start, Point end, boolean reversed) {
 
-        MatOfKeyPoint matOfKeyPoint1 = new MatOfKeyPoint();
-        MatOfKeyPoint matOfKeyPoint2 = new MatOfKeyPoint();
-
-        FeatureDetector detector = FeatureDetector.create(FeatureDetector.ORB);
-
-        detector.detect(img1, matOfKeyPoint1);
-        detector.detect(img2, matOfKeyPoint2);
-
-        DescriptorExtractor extractor = DescriptorExtractor.create(DescriptorExtractor.ORB);
-
-        Mat descriptors1 = new Mat();
-        Mat descriptors2 = new Mat();
-
-        extractor.compute(img1, matOfKeyPoint1, descriptors1);
-        extractor.compute(img2, matOfKeyPoint2, descriptors2);
-
-        if (descriptors1.empty() || descriptors2.empty()) {
-            throw new CvException("wrond desc");
-        }
-//        descriptors1.convertTo(descriptors1, CvType.CV_32F);
-//        descriptors2.convertTo(descriptors2, CvType.CV_32F);
-
-        DescriptorMatcher matcher = DescriptorMatcher.create(DescriptorMatcher.BRUTEFORCE_HAMMING);
-
-        List<MatOfDMatch> matches = new ArrayList<>();
-
-        matcher.knnMatch(descriptors1, descriptors2, matches, 2);
-
-//        double minDist = Double.MAX_VALUE;
-//        double maxDist = Double.MIN_VALUE;
-//        for (int i = 0; i < descriptors1.rows(); i++) {
-//            double dist = matches.toList().get(i).distance;
-//            if (dist < minDist) minDist = dist;
-//            if (dist > maxDist) maxDist = dist;
-//        }
-
-        List<DMatch> goodMatches = new LinkedList<>();
-
-        for (int i = 0; i < matches.size(); i++) {
-            if (matches.get(i).toList().get(0).distance < 0.8 * matches.get(i).toList().get(1).distance) {
-                goodMatches.add(matches.get(i).toList().get(0));
+        List<Point> result = new LinkedList<>();
+        Double coef = (end.y - start.y) / (end.x - start.x);
+        if (start.y == 0 && start.x != 0) {
+            int x;
+            for (int y = Double.valueOf(start.y).intValue(); y <= Double.valueOf(end.y).intValue(); y++) {
+                x = Double.valueOf((y + coef * start.x + start.y) / coef).intValue();
+                result.add(new Point(x, y));
+            }
+        } else {
+            int y;
+            for (int x = Double.valueOf(start.x).intValue(); x <= Double.valueOf(end.x).intValue(); x++) {
+                y = Double.valueOf(coef * (x - start.x) + start.y).intValue();
+                result.add(new Point(x, y));
             }
         }
-//        matches.fromList(goodMatches);
+        return result;
+    }
 
-//        System.out.println(matches.toList().size());
-        System.out.println(goodMatches.size());
-//        System.out.println(matches.toList().stream().mapToDouble(a -> a.distance).sum()/ (double) matches.toList().size());
+    public double getAvgDifferenceOnPoints(List<Point> points, Mat img) {
+        double sum = 0;
+        double value1 = 0;
+        double value2 = 0;
+        for (int i = 0; i < points.size() - 1; i++) {
+            value1 = img.get(Double.valueOf(points.get(i).x).intValue(), Double.valueOf(points.get(i).y).intValue())[0];
+            value2 = img.get(Double.valueOf(points.get(i + 1).x).intValue(), Double.valueOf(points.get(i + 1).y).intValue())[0];
+            sum += Math.abs(value2 - value1);
+        }
+        return sum;
+    }
 
+    public double getGrayPointsVariance(List<Point> points, Mat img) {
+        double average = points.stream()
+                .mapToDouble(a -> img.get(Double.valueOf(a.y).intValue(), Double.valueOf(a.x).intValue())[0])
+                .average()
+                .getAsDouble();
 
+        double variance = points.stream()
+                .mapToDouble(a -> img.get(Double.valueOf(a.y).intValue(), Double.valueOf(a.x).intValue())[0])
+                .map(a -> Math.pow(a - 255, 2))
+                .average()
+                .getAsDouble();
 
-        MatOfDMatch goodMatchesMat = new MatOfDMatch();
+        return variance;
+    }
 
-        goodMatchesMat.fromList(goodMatches);
+    public String listToString(List<Point> points, Mat img) {
+        points.remove(points.size() - 1);
+        List<Double> doubles =
+                points.stream()
+                        .mapToDouble(a -> img.get(
+                                Double.valueOf(a.y).intValue(),
+                                Double.valueOf(a.x).intValue())[0])
+                        .boxed()
+                        .collect(Collectors.toList());
+        return doubles.toString();
+    }
 
-        Mat matchesImage = new Mat();
+    public List<Integer> getDifferencesOnLine(List<Point> line, Mat img) {
+        List<Integer> diffs = new LinkedList<>();
+        for (int i = 0; i < line.size() - 2; i++) {
+            Point point1 = line.get(i + 1);
+            Point point2 = line.get(i);
+//            System.out.println(point1 + " " + point2);
+            diffs.add(Double.valueOf(img.get((int) point1.y, (int) point1.x)[0] -
+                    img.get((int) point2.y, (int) point2.x)[0]).intValue());
+        }
+        return diffs;
+    }
 
-        MatOfPoint2f mat1 = new MatOfPoint2f();
-        MatOfPoint2f mat2 = new MatOfPoint2f();
+    public double findFingerprint(String fileName) throws NoSuchAlgorithmException {
+        System.loadLibrary(Core.NATIVE_LIBRARY_NAME);
+        Mat img1 = Imgcodecs.imread("/home/robert/Documents/IndividualProject/" +
+                "imid/sources/imid/src/main/resources/uploads/" + fileName + ".jpg");
+        Mat grayImage = new Mat();
 
+        Imgproc.cvtColor(img1, grayImage, Imgproc.COLOR_BGR2GRAY);
+        Mat detectedEdges = new Mat();
+        Imgproc.blur(grayImage, detectedEdges, new Size(3, 3));
 
-        Features2d.drawMatches(img1, matOfKeyPoint1, img2, matOfKeyPoint2, goodMatchesMat, matchesImage);
-//        MatOfPoint2f o1 = new MatOfPoint2f();
-//        o1.fromList(matOfKeyPoint1.toList().stream().map(a -> a.pt).collect(Collectors.toList()));
-//        MatOfPoint2f o2 = new MatOfPoint2f();
-//        o2.fromList(matOfKeyPoint2.toList().stream().map(a -> a.pt).collect(Collectors.toList()));
+        Imgproc.Canny(detectedEdges, detectedEdges, 100, 25 * 3, 3, false);
 
+        Mat dest = new Mat();
+        Core.add(dest, Scalar.all(0), dest);
+        img1.copyTo(dest, detectedEdges);
 
-//        Mat output = Calib3d.findHomography(o1, o2, Calib3d.RANSAC, 20);
+        Mat gray = detectedEdges;
 
+        double minavg = Double.MAX_VALUE;
+        int miny0 = 0;
+        int miny1 = 0;
+        int minx0 = 0;
+        int minx1 = gray.cols() - 1;
 
-//        Mat output = new Mat();
-//        Features2d.drawKeypoints(img1, matOfKeyPoint, output);
+        for (int i = 0; i < gray.rows(); i++) {
+            for (int j = 0; j < gray.rows(); j++) {
+                List<Point> pointsOnLine = getPointsOnLine(new Point(0, i), new Point(gray.cols() - 1, j), false);
+                double result = getGrayPointsVariance(pointsOnLine, gray);
+                if (result < minavg) {
+                    minavg = result;
+                    miny0 = i;
+                    miny1 = j;
+                }
+            }
+        }
+        Core.rotate(gray, gray, Core.ROTATE_90_CLOCKWISE);
+        Core.rotate(img1, img1, Core.ROTATE_90_CLOCKWISE);
+        boolean rotateBack = true;
+        for (int i = 0; i < gray.rows(); i++) {
+            for (int j = 0; j < gray.rows(); j++) {
+                List<Point> pointsOnLine = getPointsOnLine(new Point(0, i), new Point(gray.cols() - 1, j), false);
+                double result = getGrayPointsVariance(pointsOnLine, gray);
+                if (result < minavg) {
+                    rotateBack = false;
+                    minavg = result;
+                    miny0 = i;
+                    miny1 = j;
+                }
+            }
+        }
+        if (rotateBack) {
+            Core.rotate(gray, gray, Core.ROTATE_90_COUNTERCLOCKWISE);
+            Core.rotate(img1, img1, Core.ROTATE_90_COUNTERCLOCKWISE);
+        }
 
-//        System.out.println(output.width() + " " + output.height());
-//        Imgproc.warpPerspective(img1, output, new Size(img2.(), img2.height()));
+//        System.out.println(miny0 + " " + miny1);
+//        System.out.println(minavg);
+//        System.out.println(listToString(getPointsOnLine(
+//                new Point(minx0, miny0),
+//                new Point(minx1, miny1),
+//                false),
+//                gray));
+        int centerRow = (miny0 + miny1) / 2;
+        double diff = gray.rows() / 2 - centerRow;
+        double ortCoef = -1 / ((double) (miny1 - miny0) / gray.cols());
+        double ortB = gray.rows() / 2 - ortCoef * gray.cols() / 2;
 
-        Imgcodecs.imwrite("/home/robert/Documents/IndividualProject/imid/sources/imid/src/main/resources/public/output.jpg", matchesImage);
+        Point ort0 = ortB < 0 && false ? new Point(0, ortB) : new Point(-ortB / ortCoef, 0);
+        Point ort1 = ortCoef * gray.cols() + ortB >= gray.rows() || true ?
+                new Point((gray.cols() - ortB) / ortCoef, gray.rows()) :
+                new Point(gray.cols(), ortCoef * gray.cols() + ortB);
 
+        Imgproc.line(img1, new Point(minx0, miny0 + diff), new Point(minx1, miny1 + diff), new Scalar(0, 255, 0), 3);
+        Imgproc.line(img1, ort0, ort1, new Scalar(255, 0, 0), 3);
+
+        System.out.println(ort0);
+        System.out.println(ort1);
+
+        List<Point> pointsOnLine = getPointsOnLine(
+                ort0,
+                ort1,
+                true);
+        pointsOnLine.remove(pointsOnLine.size() - 1);
+        System.out.println(getDifferencesOnLine(
+                pointsOnLine, grayImage).stream().mapToInt(Math::abs).sum());
+
+        System.out.println(listToString(pointsOnLine,
+                grayImage));
+
+        System.out.println(getAvgDifferenceOnPoints(pointsOnLine, grayImage));
+
+        Imgcodecs.imwrite("/home/robert/Documents/IndividualProject/imid/sources/" +
+                "imid/src/main/resources/public/output_" + fileName + ".jpg", img1);
+
+//        Imgcodecs.imwrite("/home/robert/Documents/IndividualProject/imid/sources/" +
+//                "imid/src/main/resources/public/output_edges.jpg", detectedEdges);
+
+        String text = String.valueOf(getAvgDifferenceOnPoints(pointsOnLine, grayImage));
+        MessageDigest digest = MessageDigest.getInstance("SHA-256");
+        byte[] hash = digest.digest(text.getBytes(StandardCharsets.UTF_8));
+        String encoded = Base64.getEncoder().encodeToString(hash);
+
+        return getAvgDifferenceOnPoints(pointsOnLine, grayImage);
     }
 
 }

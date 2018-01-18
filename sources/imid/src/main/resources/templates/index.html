@@ -5,6 +5,13 @@
     <title>Title</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.3.7/css/bootstrap.css"/>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.3.7/js/bootstrap.js"></script>
+    <script>
+        $('.file-upload').change(function() {
+            var i = $(this).prev('label').clone();
+            var file = $('.file-upload')[0].files[0].name;
+            $(this).prev('label').text(file);
+        });
+    </script>
 </head>
 <body>
 <div class="container-fluid">
@@ -27,7 +34,7 @@
                                 </div>
                                 <div class="panel-body">
                                     <label class="btn btn-primary btn-file col-md-6 col-md-offset-3">
-                                        Browse <input id="imagefile1" name="imagefile" type="file" style="display: none;">
+                                        Browse <input id="imagefile1" name="imagefile" class="file-upload" type="file" style="display: none;">
                                     </label>
                                 </div>
                             </div>
@@ -40,7 +47,7 @@
                                 </div>
                                 <div class="panel-body">
                                     <label class="btn btn-primary btn-file col-md-6 col-md-offset-3">
-                                        Browse <input id="imagefile2" name="imagefile" type="file" style="display: none;">
+                                        Browse <input id="imagefile2" name="imagefile" class="file-upload" type="file" style="display: none;">
                                     </label>
                                 </div>
                             </div>
