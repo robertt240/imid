@@ -44,7 +44,7 @@ public class IndexController {
         redirectAttributes.addFlashAttribute("rate",
                 "Same object probability = " +
                         String.valueOf(100 * (1 -
-                                Math.abs(fingerprint1 - fingerprint2) / (fingerprint1 + fingerprint2))) + "%");
+                                (int) Math.abs(fingerprint1 - fingerprint2) / (fingerprint1 + fingerprint2))) + "%");
         Thread.sleep(1000);
         return "redirect:/result";
     }
